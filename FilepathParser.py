@@ -1,9 +1,8 @@
 import os
-import sys
-import pandas as pd
 import re
-from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QVBoxLayout, QPushButton
-from pkg_resources import get_distribution, DistributionNotFound
+import sys
+
+from pkg_resources import DistributionNotFound, get_distribution
 
 # Check if the required dependencies are installed
 dependencies = ["pandas", "openpyxl", "PyQt5"]
@@ -18,6 +17,10 @@ if missing_dependencies:
     print(f"Missing dependencies: {missing_dependencies}.\nPlease install them using pip or conda.")
     sys.exit(1)
 
+import pandas as pd
+from PyQt5.QtWidgets import (QApplication, QFileDialog, QPushButton,
+                             QVBoxLayout, QWidget)
+
 # Create the GUI window
 app = QApplication(sys.argv)
 window = QWidget()
@@ -31,16 +34,7 @@ def browse_file():
     if file_path:
         df = pd.read_excel(file_path)
         # Use a regular expression to search for file paths in the cells of the DataFrame
-        pattern = r'(?:[A-Za-z]\:|\\\\[\w\.]+\\[\w.$]+)\\(?:[\w]+\\)*\w([\w.])+'
-        results = []
-        for col in df.columns:
-            for cell in df[col]:
-                match = re.search(pattern, str(cell))
-                if match:
-                    file_path = match.group()
-                    filename = os.path.basename(file_path)
-                    result = {'Command Line': cell, 'Filepath': file_path, 'Filename': filename}
-                    results.append(result)
+        results = regex_filepath_search(df)
         # Create a new DataFrame with the search results
         results_df = pd.DataFrame(results)
         # Allow the user to select the destination for the Excel file
@@ -48,6 +42,19 @@ def browse_file():
         if file_path:
             # Write the DataFrame to the Excel file
             results_df.to_excel(file_path, index=False)
+
+def regex_filepath_search(df):
+    pattern = r'(?:[A-Za-z]\:|\\\\[\w\.]+\\[\w.$]+)\\(?:[\w]+\\)*\w([\w.])+'
+    results = []
+    for col in df.columns:
+        for cell in df[col]:
+            match = re.search(pattern, str(cell))
+            if match:
+                file_path = match.group()
+                filename = os.path.basename(file_path)
+                result = {'Command Line': cell, 'Filepath': file_path, 'Filename': filename}
+                results.append(result)
+    return results
 
 # Create a button to trigger the file browser
 browse_button = QPushButton("Browse")
